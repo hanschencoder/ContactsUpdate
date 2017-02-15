@@ -22,5 +22,8 @@ ContactsUpdate就是为解决这类问题存在的，比如：用户A可以在�
     - [ ] 帮助与反馈
     - [ ] 关于软件
 
+# 软件架构
+MVP + Dagger2 + Retrofit + RxJava
+
 # LICENSE
 Apache License 2.0
