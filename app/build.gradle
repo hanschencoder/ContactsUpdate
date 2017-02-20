@@ -1,0 +1,129 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        applicationId 'site.hanschen.contact'
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName '1.0'
+        testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+
+        multiDexEnabled true
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../keystore/release.keystore')
+            storePassword getProperty('store.password', 'STORE_PASSWORD')
+            keyAlias getProperty('store.key.alias', 'KEY_ALIAS')
+            keyPassword getProperty('store.key.password', 'KEY_PASSWORD')
+        }
+
+        debug {
+
+        }
+    }
+
+    buildTypes {
+        release {
+            buildConfigField 'boolean', 'LOG_ENABLE', 'false'
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            //Zipalign优化
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            buildConfigField 'boolean', 'LOG_ENABLE', 'true'
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def oldFile = output.outputFile
+            def releaseApkName = String.format('%s_%s_%s_%s.apk', 'Runner', getVersionName(), getDate(), variant.buildType.name);
+            output.outputFile = new File(oldFile.parent, releaseApkName)
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility rootProject.ext.sourceCompatibilityVersion
+        targetCompatibility rootProject.ext.targetCompatibilityVersion
+    }
+}
+
+def getDate() {
+    return new Date().format('yyyyMMdd', TimeZone.getTimeZone('GMT+8'))
+}
+
+def getVersionName() {
+    return 'v' + android.defaultConfig.versionName
+}
+
+def getProperty(String propertyName, String envName) {
+    try {
+        def property = project.hasProperty(propertyName) ? project.property(propertyName) : System.getenv(envName)
+        if (property == null) {
+            throw new NullPointerException();
+        }
+        return property
+    } catch (Throwable ignored) {
+        def message = String.format('********************************************************************************\n' +
+                'You need define %s in gradle.properties or set environment variable: %s\n' +
+                '********************************************************************************\n', propertyName, envName)
+        throw new RuntimeException(message)
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    compile rootProject.ext.dependencies.common
+
+    // android library
+    compile rootProject.ext.dependencies.supportV13
+    compile rootProject.ext.dependencies.supportDesign
+    compile rootProject.ext.dependencies.recyclerview
+    compile rootProject.ext.dependencies.multidex
+
+    // third part library
+    compile rootProject.ext.dependencies.materialDialog
+    compile rootProject.ext.dependencies.bottomBar
+
+    // leakCanary
+    debugCompile rootProject.ext.dependencies.leakCanaryDebug
+    releaseCompile rootProject.ext.dependencies.leakCanaryRelease
+    testCompile rootProject.ext.dependencies.leakCanaryTest
+
+    // dagger
+    compile rootProject.ext.dependencies.dagger
+    annotationProcessor rootProject.ext.dependencies.daggerAnnotationProcessor
+
+    // butter knife
+    compile rootProject.ext.dependencies.butterKnife
+    annotationProcessor rootProject.ext.dependencies.butterKnifeProcessor
+
+    // ReactiveX
+    compile rootProject.ext.dependencies.rxJava2
+    compile rootProject.ext.dependencies.rxAndroid2
+    compile rootProject.ext.dependencies.rxPermissions
+
+    // AVLoadingIndicatorView, see: https://github.com/81813780/AVLoadingIndicatorView
+    compile 'com.wang.avi:library:2.1.3'
+
+    // test framework
+    testCompile rootProject.ext.dependencies.junit
+    androidTestCompile(rootProject.ext.dependencies.espresso, {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+}
